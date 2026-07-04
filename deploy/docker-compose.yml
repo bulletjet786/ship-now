@@ -1,0 +1,169 @@
+#
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Ship Now — 通用 Docker Compose 部署模板                        ║
+# ║  ─────────────────────────────────────────────                   ║
+# ║  InsForge BaaS (postgres / postgrest / insforge / deno)         ║
+# ║    + 你的应用服务 (backend / frontend)                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+#
+
+# ─── 使用前 ──────────────────────────────────────────────────────────
+# 1. 复制 .env.example → .env，填入你的密钥和配置
+# 2. docker compose up -d
+# ─────────────────────────────────────────────────────────────────────
+
+
+
+services:
+
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║  BaaS Layer — InsForge 核心后端                               ║
+  # ║  (通常无需修改)                                               ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
+  # ── 1. 数据库 ────────────────────────────────────────────────────
+  postgres:
+    image: crpi-trm32rse0qhwf009.cn-shanghai.personal.cr.aliyuncs.com/insforge/postgres-all:latest
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
+
+  # ── 2. REST API 层 ──────────────────────────────────────────────
+  postgrest:
+    image: crpi-trm32rse0qhwf009.cn-shanghai.personal.cr.aliyuncs.com/insforge/postgrest:v12.2.12
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-insforge}
+      PGRST_DB_SCHEMA: ${PGRST_DB_SCHEMA:-public}
+      PGRST_DB_ANON_ROLE: ${PGRST_DB_ANON_ROLE:-anon}
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_CHANNEL_ENABLED: "true"
+      PGRST_DB_CHANNEL: pgrst
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # ── 3. 主应用 ────────────────────────────────────────────────────
+  insforge:
+    image: crpi-trm32rse0qhwf009.cn-shanghai.personal.cr.aliyuncs.com/insforge/insforge-oss:${INSFORGE_VERSION:-v1.5.0}
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgrest:
+        condition: service_started
+    ports:
+      - "${APP_PORT:-7130}:7130"
+    environment:
+      - PORT=7130
+      - PROJECT_ROOT=/app
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:7130}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:7130}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ROOT_ADMIN_USERNAME=${ROOT_ADMIN_USERNAME:-admin}
+      - ROOT_ADMIN_PASSWORD=${ROOT_ADMIN_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-insforge}
+      - POSTGREST_BASE_URL=http://postgrest:3000
+      - DENO_RUNTIME_URL=http://deno:${DENO_PORT:-7133}
+      - LOGS_DIR=/insforge-logs
+      - STORAGE_DIR=/insforge-storage
+    volumes:
+      - storage-data:/insforge-storage
+      - app-logs:/insforge-logs
+    restart: unless-stopped
+    networks:
+      - backend
+
+  # ── 4. 边缘运行时 ────────────────────────────────────────────────
+  deno:
+    image: crpi-trm32rse0qhwf009.cn-shanghai.personal.cr.aliyuncs.com/insforge/deno-runtime:latest
+    working_dir: /app
+    depends_on:
+      - postgres
+      - postgrest
+    environment:
+      - PORT=${DENO_PORT:-7133}
+      - DENO_ENV=production
+      - DENO_DIR=/deno-dir
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGREST_BASE_URL=http://postgrest:3000
+      - WORKER_TIMEOUT_MS=${DENO_TIMEOUT:-60000}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - deno-cache:/deno-dir
+    restart: unless-stopped
+    networks:
+      - backend
+
+
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║  App Layer — 示例（按需修改）                                  ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
+  backend:
+    build: ../backend
+    ports:
+      - "7131:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-insforge}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    networks:
+      - backend
+      - public
+
+  frontend:
+    build: ../frontend
+    ports:
+      - "7132:80"
+    networks:
+      - public
+
+
+volumes:
+  postgres-data:
+  deno-cache:
+  storage-data:
+  app-logs:
+
+
+networks:
+  backend:
+    driver: bridge
+  public:
+    driver: bridge
