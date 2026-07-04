@@ -20,6 +20,14 @@ curl -fsSL https://raw.githubusercontent.com/bulletjet786/ship-now/main/install.
 docker compose -f deploy/docker-compose.yml up -d
 ```
 
+### 指定版本
+
+默认安装 `latest` 标签版本，可通过环境变量覆盖：
+
+```bash
+SHIP_NOW_TAG=v1.0 curl -fsSL https://raw.githubusercontent.com/bulletjet786/ship-now/main/install.sh | bash
+```
+
 ## 容器隔离
 
 每台机器可部署多个项目，`COMPOSE_PROJECT_NAME` 自动隔离容器/卷/网络：
