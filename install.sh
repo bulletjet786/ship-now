@@ -98,8 +98,8 @@ JWT_SECRET=${JWT_SECRET}
 ENCRYPTION_KEY=${ENCRYPTION_KEY}
 
 # ─── 管理员 ───────────────────────────────────────────────────────
-ROOT_ADMIN_USERNAME=admin@${PROJECT_NAME}.local
-ROOT_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+ADMIN_EMAIL=admin@${PROJECT_NAME}.local
+ADMIN_PASSWORD=${ADMIN_PASSWORD}
 
 # ─── 数据库 ───────────────────────────────────────────────────────
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
