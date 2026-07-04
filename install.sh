@@ -37,6 +37,7 @@ fi
 
 # ── 交互：deploy 目录名 ────────────────────────────────────────────
 DEFAULT_DEPLOY_DIR="deploy"
+if [ -e /dev/tty ]; then exec </dev/tty; fi
 read -r -p "Deploy 目录名 [${DEFAULT_DEPLOY_DIR}]: " DEPLOY_DIR
 DEPLOY_DIR=${DEPLOY_DIR:-$DEFAULT_DEPLOY_DIR}
 
