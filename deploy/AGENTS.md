@@ -66,24 +66,11 @@
 - `JWT_SECRET` — JWT 签名
 - `ENCRYPTION_KEY` — 数据加密
 - `POSTGRES_PASSWORD` — 数据库密码
-- `ROOT_ADMIN_PASSWORD` — 管理员密码
+- `ADMIN_EMAIL` — 管理员邮箱
+- `ADMIN_PASSWORD` — 管理员密码
 
 ### 可选
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `COMPOSE_PROJECT_NAME` | `{project_name}` | 容器/卷/网络前缀 |
-
-## 网络
-
-| 网络 | 接入服务 |
-|------|---------|
-| `backend`（内部） | postgres, postgrest, insforge, deno, backend |
-| `public`（外部） | backend, frontend |
-
-## 部署
-
-```bash
-docker compose up -d
-docker compose logs -f
-```
