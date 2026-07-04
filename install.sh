@@ -6,11 +6,11 @@ set -euo pipefail
 # ║                                                                ║
 # ║  在你的项目根目录执行：                                          ║
 # ║    curl -fsSL https://raw.githubusercontent.com/                 ║
-# ║      bulletjet786/ship-now/v1.0/install.sh | bash               ║
+# ║      bulletjet786/ship-now/main/install.sh | bash                ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
 REPO="bulletjet786/ship-now"
-TAG="${SHIP_NOW_TAG:-dev-v1.0}"
+TAG="${SHIP_NOW_TAG:-latest}"
 
 # ── 检测 ANSI 颜色支持 ─────────────────────────────────────────────
 if [ -t 1 ]; then
