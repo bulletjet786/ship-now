@@ -37,14 +37,17 @@ fi
 
 # ── 交互：deploy 目录名 ────────────────────────────────────────────
 DEFAULT_DEPLOY_DIR="deploy"
-if [ -e /dev/tty ]; then exec </dev/tty; fi
-read -r -p "Deploy 目录名 [${DEFAULT_DEPLOY_DIR}]: " DEPLOY_DIR
+if (exec </dev/tty) 2>/dev/null; then
+  read -r -p "Deploy 目录名 [${DEFAULT_DEPLOY_DIR}]: " DEPLOY_DIR </dev/tty
+fi
 DEPLOY_DIR=${DEPLOY_DIR:-$DEFAULT_DEPLOY_DIR}
 
 # ── 检查 deploy 目录 ───────────────────────────────────────────────
 if [ -d "$DEPLOY_DIR" ]; then
   echo -e "${YELLOW}⚠️  ${DEPLOY_DIR}/ 目录已存在。${NC}"
-  read -r -p "是否覆盖？(y/N): " CONFIRM
+  if (exec </dev/tty) 2>/dev/null; then
+    read -r -p "是否覆盖？(y/N): " CONFIRM </dev/tty
+  fi
   if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     echo "已取消。"
     exit 1
@@ -54,7 +57,10 @@ fi
 
 # ── 交互：项目名 ───────────────────────────────────────────────────
 DEFAULT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo "$(pwd)")")
-read -r -p "项目名称 [${DEFAULT_NAME}]: " PROJECT_NAME
+if (exec </dev/tty) 2>/dev/null; then
+  read -r -p "项目名称 [${DEFAULT_NAME}]: " PROJECT_NAME </dev/tty
+fi
+PROJECT_NAME=${PROJECT_NAME:-$DEFAULT_NAME}
 PROJECT_NAME=${PROJECT_NAME:-$DEFAULT_NAME}
 
 echo ""
